@@ -54,7 +54,7 @@ print('Total num of notcar images:',len(notcars))
 print('-------------------------2. SVM model training---------------------------')
 # saved_X_scaler = load_svm_model('X_scaler1000111.sav')
 
-saved_model_file = 'trained_model_1.p'
+saved_model_file = 'trained_modelxxx.p'
 saved_model = load_svm_model(saved_model_file)
 
 
@@ -62,7 +62,7 @@ saved_model = load_svm_model(saved_model_file)
 if saved_model == False :
     #TODO add HSV
     # color_space = 'HSV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-    color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+    color_space = 'HSV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
     orient = 9  # HOG orientationsd
     pix_per_cell = 8 # HOG pixels per cell
     cell_per_block = 2 # HOG cells per block
@@ -109,7 +109,7 @@ if saved_model == False :
     print('Training SVC...')
     # Use a linear SVC 
 
-    parameters = {'kernel':('linear', 'rbf'), 'C':[1, 10]}
+    parameters = {'kernel':('linear', 'rbf'), 'C':[1,3,5,7,9, 10]}
     svr = SVC()
     t=time.time()
     clf = GridSearchCV(svr, parameters)  
@@ -169,6 +169,8 @@ else:
 print('-------------------------3. test on single image---------------------------')
 
 image = mpimg.imread('../test_images/test5.jpg')
+process_image(image)
+"""
 use_HOG_subsampling = 1
 if not use_HOG_subsampling:
     draw_image = np.copy(image)
@@ -235,6 +237,7 @@ plt.title('Heat Map')
 fig.tight_layout()
 plt.show()
 exit()
+"""
 ######------------------
 #Step 2: Combine features
 
