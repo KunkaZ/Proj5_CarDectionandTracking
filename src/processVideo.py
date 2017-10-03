@@ -1,7 +1,7 @@
 from proj5_functions import *
 from moviepy.editor import VideoFileClip
 # white_output = 'test_videos_output/solidWhiteRight.mp4'
-video_path = '../test_video.mp4'
+video_path = '../project_video.mp4'
 output_video = '../output_video.mp4'
 ## To speed up the testing process you may want to try your pipeline on a shorter subclip of the video
 ## To do so add .subclip(start_second,end_second) to the end of the line below

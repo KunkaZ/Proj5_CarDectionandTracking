@@ -1,5 +1,5 @@
 from glob import glob as glob2
-from proj5_functions import *
+from proj5_functions_forWriteup import *
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,10 +12,11 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.grid_search import GridSearchCV
 from skimage.feature import hog
 import pickle
+from scipy.ndimage.measurements import label
 
 from sklearn.model_selection import train_test_split
 # from sklearn.cross_validation import train_test_split
-
+DEBUG_SWITCH = 1
 ##---------------------------------Step 0: setup data set---------------------------------------------------
 # Get training data images paths
 vehicles_data_path      = '../vehicles/'
@@ -24,7 +25,7 @@ output_images_path      = '../output_images/'
 
 paths_vehicles      = glob2(vehicles_data_path+'*/')
 paths_non_vehicles  = glob2(non_vehicles_data_path+'*/')
-
+write_up_pic_path   = '../write_up_img/'
 cars = []
 notcars = []
 for path in paths_vehicles:
@@ -34,13 +35,90 @@ for path in paths_vehicles:
 for path in paths_non_vehicles:
     temp_img = glob.glob(path+'*.*')
     notcars.extend(temp_img)
-
-test_cars = cars[0:1000]
-test_notcars = notcars[0:1000]
+test_cars = cars[0:10]
+test_notcars = notcars[0:10]
+# test_cars = cars[0:3000]
+# test_notcars = notcars[0:3000]
 print('--------------------1. setup data set--------------------------------')
-print('Total num of car images:',len(cars))
-print('Total num of notcar images:',len(notcars))
+print('Total num of car images:',len(test_cars))
+print('Total num of notcar images:',len(test_notcars))
 
+sample_car = mpimg.imread(test_cars[9])
+sample_not_car = mpimg.imread(test_notcars[9])
+f, axarr2 = plt.subplots(1,2)
+f.tight_layout()
+axarr2[0].imshow(sample_car, cmap='gray')
+# axarr2[0,0].imshow(test_img[:,:,::-1], cmap='gray')
+axarr2[0].set_title('Car', fontsize=10)
+axarr2[1].imshow(sample_not_car, cmap='gray')
+axarr2[1].set_title('Not-Car', fontsize=10)
+plt.savefig(write_up_pic_path+'car_not_car.png')
+# plt.show()
+
+color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+orient = 9  # HOG orientationsd
+pix_per_cell = 8 # HOG pixels per cell
+cell_per_block = 2 # HOG cells per block
+hog_channel = "ALL" # Can be 0, 1, 2, or "ALL"
+spatial_size = (32, 32) # Spatial binning dimensions
+hist_bins = 64    # Number of histogram bins
+spatial_feat = True # Spatial features on or off
+hist_feat = True # Histogram features on or off
+hog_feat = True # HOG features on or off
+y_start_stop = [360,None] # Min and max in y to
+
+features = single_img_features(sample_car, color_space=color_space, 
+                    spatial_size=spatial_size, hist_bins=hist_bins, 
+                    orient=orient, pix_per_cell=pix_per_cell, 
+                    cell_per_block=cell_per_block, 
+                    hog_channel=hog_channel, spatial_feat=spatial_feat, 
+                    hist_feat=hist_feat, hog_feat=hog_feat,img_name = 'Car')
+
+features = single_img_features(sample_not_car, color_space=color_space, 
+                    spatial_size=spatial_size, hist_bins=hist_bins, 
+                    orient=orient, pix_per_cell=pix_per_cell, 
+                    cell_per_block=cell_per_block, 
+                    hog_channel=hog_channel, spatial_feat=spatial_feat, 
+                    hist_feat=hist_feat, hog_feat=hog_feat,img_name = 'not-Car')
+
+car_feature_vec     = bin_spatial(sample_car, color_space='RGB', size=(32, 32))
+car_hist_features   = color_hist(sample_car, nbins=hist_bins)
+# print('car_feature_vec ',car_feature_vec.shape)
+
+not_car_feature_vec     = bin_spatial(sample_not_car, color_space='RGB', size=(32, 32))
+not_car_hist_features   = color_hist(sample_not_car, nbins=hist_bins)
+
+f, axarr2 = plt.subplots(2,3)
+f.tight_layout()
+axarr2[0,0].imshow(sample_car, cmap='gray')
+axarr2[0,0].set_title('Car', fontsize=10)
+
+axarr2[0,1].plot(car_feature_vec)
+axarr2[0,1].set_title('Car spatial', fontsize=10)
+
+axarr2[0,2].plot(car_hist_features)
+axarr2[0,2].set_title('Car hist', fontsize=10)
+
+axarr2[1,0].imshow(sample_not_car, cmap='gray')
+axarr2[1,0].set_title('Not-car', fontsize=10)
+# plt.savefig(write_up_pic_path+'car_not_car.png')
+
+axarr2[1,1].plot(not_car_feature_vec)
+axarr2[1,1].set_title('Not car spatial', fontsize=10)
+
+axarr2[1,2].plot(not_car_hist_features)
+axarr2[1,2].set_title('Not car hist', fontsize=10)
+
+# plt.figure(100)
+# # Plot features
+# plt.plot(feature_vec)
+# plt.title('Car Spatial')
+
+# # Plot features
+# plt.plot(feature_vec)
+# plt.title('Not_car Spatial')
+plt.show()
+# exit()
 
 ##---------------------------------Step 2: extract features---------------------------------------------------
 #
@@ -50,26 +128,27 @@ print('Total num of notcar images:',len(notcars))
 # exit()
 
 print('-------------------------2. SVM model training---------------------------')
-color_space = 'HSV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-orient = 9  # HOG orientations
-pix_per_cell = 8 # HOG pixels per cell
-cell_per_block = 2 # HOG cells per block
-hog_channel = "ALL" # Can be 0, 1, 2, or "ALL"
-spatial_size = (32, 32) # Spatial binning dimensions
-hist_bins = 32    # Number of histogram bins
-spatial_feat = True # Spatial features on or off
-hist_feat = True # Histogram features on or off
-hog_feat = True # HOG features on or off
-y_start_stop = [360,None] # Min and max in y to search in slide_window()
+# saved_X_scaler = load_svm_model('X_scaler1000111.sav')
 
-saved_X_scaler = load_svm_model('X_scaler1000.sav')
-
-saved_model_file = 'finalized_model_full_993.sav'
+saved_model_file = 'trained_model_1.p'
 saved_model = load_svm_model(saved_model_file)
 
 
 
-if saved_model == False or saved_X_scaler == False:
+if saved_model == False :
+    #TODO add HSV
+    # color_space = 'HSV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+    color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+    orient = 9  # HOG orientationsd
+    pix_per_cell = 8 # HOG pixels per cell
+    cell_per_block = 2 # HOG cells per block
+    hog_channel = "ALL" # Can be 0, 1, 2, or "ALL"
+    spatial_size = (32, 32) # Spatial binning dimensions
+    hist_bins = 64    # Number of histogram bins
+    spatial_feat = True # Spatial features on or off
+    hist_feat = True # Histogram features on or off
+    hog_feat = True # HOG features on or off
+    y_start_stop = [360,None] # Min and max in y to search in slide_window()
     print('Start SVM model training session:')
 
     print('Extract car features...')
@@ -106,7 +185,7 @@ if saved_model == False or saved_X_scaler == False:
     print('Training SVC...')
     # Use a linear SVC 
 
-    parameters = {'kernel':('linear', 'rbf'), 'C':[1, 10]}
+    parameters = {'kernel':('linear', 'rbf'), 'C':[1,3,5,7,9, 10]}
     svr = SVC()
     t=time.time()
     clf = GridSearchCV(svr, parameters)  
@@ -122,63 +201,124 @@ if saved_model == False or saved_X_scaler == False:
     # Check the prediction time for a single sample
     t=time.time()
 
-    filename = 'finalized_model.sav'
-    pickle.dump(clf, open(filename, 'wb'))
 
-    filename = 'X_scaler.sav'
-    pickle.dump(X_scaler, open(filename, 'wb'))
+    filename = 'trained_model.p'
+    svc_para = {'clf':clf,
+                'X_scaler':X_scaler,
+                'color_space': color_space, # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+                'orient': orient,  # HOG orientations
+                'pix_per_cell': pix_per_cell, # HOG pixels per cell
+                'cell_per_block': cell_per_block, # HOG cells per block
+                'hog_channel': hog_channel, # Can be 0, 1, 2, or "ALL"
+                'spatial_size': spatial_size, # Spatial binning dimensions
+                'hist_bins': hist_bins,    # Number of histogram bins
+                'spatial_feat': spatial_feat, # Spatial features on or off
+                'hist_feat': hist_feat, # Histogram features on or off
+                'hog_feat': hog_feat, # HOG features on or off
+                'y_start_stop': y_start_stop} # Min and max in y to search in slide_window()
+    pickle.dump(svc_para, open(filename, 'wb'))
+
+
     # print('Load saved SVM model')
     # loaded_model = pickle.load(open(filename, 'rb'))
     # result = loaded_model.score(X_test, y_test)
     # print('Test Accuracy of saved SVC = ',result)
 else:
     print('Saved model loaded.')
-    clf = saved_model
-    X_scaler = saved_X_scaler
+    clf             = saved_model["clf"]
+    X_scaler        = saved_model["X_scaler"]
+    color_space     = saved_model["color_space"]
+    orient          = saved_model["orient"]
+    pix_per_cell    = saved_model["pix_per_cell"]
+    cell_per_block  = saved_model["cell_per_block"]
+    hog_channel     = saved_model["hog_channel"]
+    spatial_size    = saved_model["spatial_size"]
+    hist_bins       = saved_model["hist_bins"]
+    spatial_feat    = saved_model["spatial_feat"]
+    hog_feat        = saved_model["hog_feat"]
+    hist_feat       = saved_model["hist_feat"]
+    y_start_stop    = saved_model["y_start_stop"]
     
 # exit()
 
 
 print('-------------------------3. test on single image---------------------------')
 
-image = mpimg.imread('../test_images/test5.jpg')
-draw_image = np.copy(image)
+image = mpimg.imread('../test_images/test1.jpg')
+saved_model_file = 'trained_model_YCrCbLong.p'
 
+print('saved_model_file:',saved_model_file)
+process_image(image,saved_model_file)
 
-# Uncomment the following line if you extracted training
-# data from .png images (scaled 0 to 1 by mpimg) and the
-# image you are searching is a .jpg (scaled 0 to 255)
-image = image.astype(np.float32)/255
-hot_windows = []
-xy_windows = [[128,128],[96,96],[64,64]]
-for xy_window in xy_windows: 
-    windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
-                        xy_window=xy_window, xy_overlap=(0.5, 0.5))
-    # print(windows)
+# use_HOG_subsampling = 1
+# if not use_HOG_subsampling:
+#     draw_image = np.copy(image)
+#     # Uncomment the following line if you extracted training
+#     # data from .png images (scaled 0 to 1 by mpimg) and the
+#     # image you are searching is a .jpg (scaled 0 to 255)
+#     image = image.astype(np.float32)/255
+#     hot_windows = []
+#     xy_windows = [[128,128],[96,96],[64,64]]
+#     for xy_window in xy_windows: 
+#         windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
+#                             xy_window=xy_window, xy_overlap=(0.5, 0.5))
+#         # print(windows)
 
-    hot_window = search_windows(image, windows, clf, X_scaler, color_space=color_space, 
-                            spatial_size=spatial_size, hist_bins=hist_bins, 
-                            orient=orient, pix_per_cell=pix_per_cell, 
-                            cell_per_block=cell_per_block, 
-                            hog_channel=hog_channel, spatial_feat=spatial_feat, 
-                            hist_feat=hist_feat, hog_feat=hog_feat) 
-    hot_windows.extend(hot_window)
+#         hot_window = search_windows(image, windows, clf, X_scaler, color_space=color_space, 
+#                                 spatial_size=spatial_size, hist_bins=hist_bins, 
+#                                 orient=orient, pix_per_cell=pix_per_cell, 
+#                                 cell_per_block=cell_per_block, 
+#                                 hog_channel=hog_channel, spatial_feat=spatial_feat, 
+#                                 hist_feat=hist_feat, hog_feat=hog_feat) 
+#         hot_windows.extend(hot_window)                                
+#     # print(hot_windows)
+#     out_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)           
 
-                            
-# print(hot_windows)
-window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
+#     plt.imshow(out_img)
+#     plt.show()
 
-plt.imshow(window_img)
-plt.show()
+# # test 2 use hog sub-sampling
+# else:
+#     #TODO: return hot_windos from find cars;
+#     #TODO: modifiy color_space so I can pass it into find_cars
+#     print('use hog sub-sampling')
+#     ystart  = 400
+#     ystop   = 656
+#     scales  = [1,1.5]
+#     print('search with scale',scales)
+#     out_img, hot_windows = find_cars(image, ystart, ystop, scales, clf, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins)
 
+#     plt.imshow(out_img)
 
+#     plt.show()
+# # draw heat map
+
+# heat = np.zeros_like(out_img[:,:,0]).astype(np.float)
+# # print(hot_window)
+# heat = add_heat(heat,hot_windows)
+
+# # Apply threshold to help remove false positives
+# heat = apply_threshold(heat,1)
+
+# # Visualize the heatmap when displaying    
+# heatmap = np.clip(heat, 0, 255)
+
+# labels = label(heatmap)
+# draw_img = draw_labeled_bboxes(np.copy(image), labels)
+
+# fig = plt.figure()
+# plt.subplot(121)
+# plt.imshow(draw_img)
+# plt.title('Car Positions')
+# plt.subplot(122)
+# plt.imshow(heatmap, cmap='hot')
+# plt.title('Heat Map')
+# fig.tight_layout()
+# plt.show()
 exit()
+# """
 ######------------------
 #Step 2: Combine features
-
-rand_state = np.random.randint(0, 100)
-X_train, X_test, y_train, y_test = train_test_split(
-    scaled_X, y, test_size=0.2, random_state=rand_state)
 
 
 # Feature normazalization

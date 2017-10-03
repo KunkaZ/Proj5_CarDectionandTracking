@@ -17,7 +17,7 @@ from scipy.ndimage.measurements import label
 from sklearn.model_selection import train_test_split
 # from sklearn.cross_validation import train_test_split
 DEBUG_SWITCH = 1
-##---------------------------------Step 0: setup data set---------------------------------------------------
+print('--------------------1. setup data set--------------------------------')
 # Get training data images paths
 vehicles_data_path      = '../vehicles/'
 non_vehicles_data_path  = '../non-vehicles/'
@@ -35,26 +35,21 @@ for path in paths_vehicles:
 for path in paths_non_vehicles:
     temp_img = glob.glob(path+'*.*')
     notcars.extend(temp_img)
+# test_cars = cars
+# test_notcars = notcars
 test_cars = cars
 test_notcars = notcars
-# test_cars = cars[0:3000]
-# test_notcars = notcars[0:3000]
-print('--------------------1. setup data set--------------------------------')
-print('Total num of car images:',len(cars))
-print('Total num of notcar images:',len(notcars))
+
+print('Total num of car images:',len(test_cars))
+print('Total num of notcar images:',len(test_notcars))
 
 
-##---------------------------------Step 2: extract features---------------------------------------------------
-#
-# 1) spatial
-# 2) HOG
-# 3) 
-# exit()
+
 
 print('-------------------------2. SVM model training---------------------------')
 # saved_X_scaler = load_svm_model('X_scaler1000111.sav')
 
-saved_model_file = 'trained_modelxxx.p'
+saved_model_file = 'trained_model_good.p'
 saved_model = load_svm_model(saved_model_file)
 
 
@@ -62,7 +57,7 @@ saved_model = load_svm_model(saved_model_file)
 if saved_model == False :
     #TODO add HSV
     # color_space = 'HSV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-    color_space = 'HSV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+    color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
     orient = 9  # HOG orientationsd
     pix_per_cell = 8 # HOG pixels per cell
     cell_per_block = 2 # HOG cells per block
@@ -109,8 +104,8 @@ if saved_model == False :
     print('Training SVC...')
     # Use a linear SVC 
 
-    parameters = {'kernel':('linear', 'rbf'), 'C':[1,3,5,7,9, 10]}
-    svr = SVC()
+    parameters = {'kernel':('linear', 'rbf'), 'C':[1,10]}
+    svr = SVC(verbose = True)
     t=time.time()
     clf = GridSearchCV(svr, parameters)  
     clf.fit(X_train, y_train)
@@ -139,7 +134,9 @@ if saved_model == False :
                 'spatial_feat': spatial_feat, # Spatial features on or off
                 'hist_feat': hist_feat, # Histogram features on or off
                 'hog_feat': hog_feat, # HOG features on or off
-                'y_start_stop': y_start_stop} # Min and max in y to search in slide_window()
+                'y_start_stop': y_start_stop, # Min and max in y to search in slide_window()
+                'cars_num':len(test_cars),
+                'non_cars_num':len(test_notcars)}
     pickle.dump(svc_para, open(filename, 'wb'))
 
 
@@ -168,8 +165,13 @@ else:
 
 print('-------------------------3. test on single image---------------------------')
 
-image = mpimg.imread('../test_images/test5.jpg')
-process_image(image)
+image = mpimg.imread('../test_images/test1.jpg')
+saved_model_file = 'trained_model_YCrCbLong.p'
+
+print('saved_model_file:',saved_model_file)
+process_image(image,saved_model_file)
+
+
 """
 use_HOG_subsampling = 1
 if not use_HOG_subsampling:
