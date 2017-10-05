@@ -2,14 +2,7 @@
 
 ***Vehicle Detection Project***
 
-The goals / steps of this project are the following:
-
-* Perform a Histogram of Oriented Gradients (HOG) feature extraction on a labeled training set of images and train a classifier Linear SVM classifier
-* Optionally, you can also apply a color transform and append binned color features, as well as histograms of color, to your HOG feature vector. 
-* Note: for those first two steps don't forget to normalize your features and randomize a selection for training and testing.
-* Implement a sliding-window technique and use your trained classifier to search for vehicles in images.
-* Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
-* Estimate a bounding box for vehicles detected.
+[Video link](https://youtu.be/WTYsYVG4OWU)
 
 [//]: # (Image References)
 [1_car_not_car]: ./write_up_img/1_car_not_car.png
@@ -19,7 +12,8 @@ The goals / steps of this project are the following:
 [5_bboxes_and_heat]: ./write_up_img/5_bboxes_and_heat.png
 [6_label]: ./write_up_img/6_label.png
 [7_label_heat_findcar]: ./write_up_img/7_label_heat_findcar.png
-[video1]: ./write_up_img.mp4
+[8_falsedetection]: ./write_up_img/8_falsedetection.png
+[video1]: https://youtu.be/WTYsYVG4OWU
 
 ---
 
@@ -53,7 +47,7 @@ I trained a SVM by using function `GridSearchCV()` for carrying out automatic pa
 
 #### Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
 
-Since image part of road is mainly at bottom half of the whole picture, my search window only slides through bottom half part every frames. The scale I used is `[1,1.5]`. Tried smaller scale like `0.8` and larger scale like `2.0`. No obvious improvement observed and more scales could cause false dectection and slow down video processing. Thuse, only `1` and `1.5` are used in my code.
+Since image part of road is mainly at bottom half of the whole picture, my search window only slides through bottom half part every frames. The scales I used is `[1,2,0.5]`. Tried more scales like `0.8` and larger scale like `3.0`. No obvious improvement observed and more scales could cause false dectection and slow down video processing. 
 
 ![alt text][3_sliding_window]
 
@@ -68,16 +62,17 @@ Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spat
 ### Video Implementation
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
-Here's a [link to my video result](https://youtu.be/9-xOB8HkWcg)
+Here's a [link to my video result](https://youtu.be/WTYsYVG4OWU)
 
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
 I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
 
-Here's an example result showing the heatmap. The result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
+Another challenge are unexpected false detection in video. It pops up randomly. I applied an accumulated heat map generated from previous frames. Basically, to process current frame, it will look back previous 5 frames' heat maps and sum them together then applies a threshold to that new heat map to predict cars in current frame. It works very well,take a look at the [video](https://youtu.be/WTYsYVG4OWU)!
 
-![alt text][7_label_heat_findcar]
+
+![alt text][8_falsedetection]
 
 
 
