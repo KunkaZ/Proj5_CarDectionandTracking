@@ -80,10 +80,13 @@ I recorded the positions of positive detections in each frame of the video.  Fro
 
 Another challenge are unexpected false detection in video. It pops up randomly. I applied an accumulated heat map generated from previous frames. Basically, to process current frame, it will look back previous 5 frames' heat maps and sum them together then applies a threshold to that new heat map to predict cars in current frame. It works very well,take a look at the [video](https://youtu.be/WTYsYVG4OWU)!
 
+
 Good Detection
+
 ![alt text][image7]
 
 False Detection at Left corner
+
 ![alt text][8_falsedetection]
 
 
